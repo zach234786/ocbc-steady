@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>OCBC Steady — Interactive Prototype</title>
+<meta name="description" content="An autonomous agent that turns volatile gig earnings into a steady weekly salary." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --red:#E1251B; --red-dk:#B71C13; --red-tint:#FBEEE9;
+    --ink:#17171A; --ink-2:#6E6E76; --ink-3:#9A9AA1;
+    --green:#0C7A5A; --green-tint:#E5F3EE;
+    --amber:#B8790F; --amber-tint:#FBF3E3;
+    --paper:#FFFFFF; --fog:#F4F4F6; --line:#ECECEF;
+    --stage-1:#1B1B20; --stage-2:#26262E;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;
+    background:linear-gradient(160deg,var(--stage-1) 0%,var(--stage-2) 100%);
+    background-attachment:fixed;
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    font-variant-numeric:tabular-nums;
+  }
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+  button:focus-visible, input:focus-visible{outline:2px solid #7FB2FF;outline-offset:2px}
+  .stage{
+    min-height:100%;display:flex;justify-content:center;align-items:flex-start;
+    gap:36px;padding:28px 20px 40px;flex-wrap:wrap;
+  }
+
+  /* ── phone ───────────────────────────────── */
+  .phone{
+    width:380px;max-width:100%;border-radius:44px;padding:10px;background:#0C0C0F;
+    box-shadow:0 30px 80px rgba(0,0,0,.55);flex:0 0 auto;
+  }
+  .screen{
+    border-radius:36px;overflow:hidden;background:var(--fog);
+    height:764px;display:flex;flex-direction:column;position:relative;
+  }
+  .statusbar{
+    background:var(--paper);display:flex;justify-content:space-between;align-items:center;
+    padding:11px 24px 4px;font-size:11px;font-weight:700;position:relative;
+  }
+  .notch{position:absolute;left:50%;transform:translateX(-50%);top:9px;width:82px;height:21px;border-radius:99px;background:#0C0C0F}
+  .apphead{background:var(--paper);padding:6px 18px 12px;display:flex;justify-content:space-between;align-items:center}
+  .brand{font-size:10px;font-weight:800;letter-spacing:.14em;color:var(--red)}
+  .greet{font-size:17px;font-weight:800}
+  .pill{display:flex;align-items:center;gap:6px;background:var(--green-tint);padding:4px 10px;border-radius:99px}
+  .pill i{width:6px;height:6px;border-radius:99px;background:var(--green);display:block}
+  .pill span{font-size:10px;font-weight:800;color:var(--green)}
+
+  .views{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth}
+  .view{display:none;flex-direction:column;gap:12px}
+  .view.on{display:flex}
+  .card{background:var(--paper);border-radius:18px;padding:16px}
+  .lbl{font-size:11px;font-weight:800;letter-spacing:.05em}
+  .sub{font-size:10.5px;color:var(--ink-3);line-height:1.45}
+
+  .salarycard{background:linear-gradient(135deg,var(--red) 0%,var(--red-dk) 100%);color:#fff;border-radius:18px;padding:16px}
+  .salarycard .lbl{opacity:.85}
+  .amt{font-size:34px;font-weight:800;line-height:1;letter-spacing:-.02em}
+  .amt-row{display:flex;align-items:baseline;gap:8px;margin-top:3px}
+  .amt-row small{font-size:12px;font-weight:600;opacity:.85}
+  .streak{font-size:11px;margin-top:9px;opacity:.92;line-height:1.45}
+
+  .meterwrap{margin-top:7px}
+  .meter{height:10px;border-radius:99px;background:#E9E9EC;overflow:hidden}
+  .meter i{display:block;height:100%;border-radius:99px;background:var(--green);width:0;transition:width .7s cubic-bezier(.2,.8,.2,1),background .3s}
+  .metertop{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+  .metertop span:last-child{font-size:11px;color:var(--ink-2)}
+
+  .goalrow{display:flex;justify-content:space-between;align-items:center}
+  .goalamt{font-size:19px;font-weight:800;color:var(--green)}
+
+  .note{border-radius:14px;padding:12px 14px;font-size:11.5px;line-height:1.5}
+  .note.amber{background:var(--amber-tint);color:var(--amber)}
+  .note.red{background:var(--red-tint);color:var(--red-dk)}
+
+  /* ladder */
+  .rung{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line);opacity:.25;transform:translateX(-6px);transition:opacity .4s ease,transform .4s ease}
+  .rung.in{opacity:1;transform:none}
+  .rung:first-of-type{border-top:none}
+  .rung .n{width:28px;height:28px;border-radius:9px;background:var(--fog);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex:0 0 auto}
+  .rung .body{flex:1;min-width:0}
+  .rung .name{font-size:13px;font-weight:800;line-height:1.25}
+  .rung .desc{font-size:10.5px;color:var(--ink-3);line-height:1.35;margin-top:1px}
+  .rung .val{font-size:14px;font-weight:800;flex:0 0 auto;white-space:nowrap}
+  .t-ink{color:var(--ink)} .t-green{color:var(--green)} .t-amber{color:var(--amber)} .t-red{color:var(--red)} .t-mute{color:var(--ink-3)}
+
+  /* log */
+  .logitem{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line)}
+  .logitem:first-of-type{border-top:none}
+  .dot{width:24px;height:24px;border-radius:99px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex:0 0 auto}
+  .logtxt{font-size:12px;line-height:1.4}
+  .logmeta{font-size:10px;color:var(--ink-3);margin-top:2px}
+
+  /* rules */
+  .ruleline{display:flex;gap:8px;align-items:flex-start;padding:5px 0}
+  .ruleline .mk{font-size:11px;line-height:1.4;flex:0 0 auto}
+  .ruleline .tx{font-size:12px;line-height:1.4}
+  .ruleh{font-size:10px;font-weight:800;letter-spacing:.12em;margin:14px 0 4px}
+  .ruleh:first-of-type{margin-top:10px}
+  .dial{padding:12px 0;border-top:1px solid var(--line)}
+  .dialtop{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px}
+  .dialname{font-size:12.5px;font-weight:800}
+  .dialval{font-size:13px;font-weight:800;color:var(--red)}
+  .dialsub{font-size:10.5px;color:var(--ink-3);line-height:1.4;margin-bottom:8px}
+
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:99px;background:#E4E4E8;outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:99px;background:var(--red);border:3px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.28);cursor:pointer}
+  input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:99px;background:var(--red);border:3px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.28);cursor:pointer}
+
+  /* toast + sheet */
+  .toast{
+    position:absolute;left:14px;right:14px;bottom:78px;background:rgba(23,23,26,.95);
+    color:#fff;border-radius:14px;padding:12px 14px;font-size:12px;font-weight:700;line-height:1.45;
+    opacity:0;transform:translateY(8px);pointer-events:none;transition:all .3s ease;z-index:14;
+    backdrop-filter:blur(6px);
+  }
+  .toast.on{opacity:1;transform:none}
+  .scrim{position:absolute;inset:0;background:rgba(12,12,15,.45);display:none;align-items:flex-end;z-index:20}
+  .scrim.on{display:flex}
+  .sheet{width:100%;background:var(--paper);border-radius:26px 26px 0 0;padding:18px 18px 22px;animation:up .3s cubic-bezier(.2,.8,.2,1)}
+  @keyframes up{from{transform:translateY(100%)}to{transform:none}}
+  .grab{width:38px;height:4px;border-radius:99px;background:#DDD;margin:0 auto 14px}
+  .sheet h3{font-size:17px;font-weight:800;line-height:1.3;letter-spacing:-.01em}
+  .sheet p{font-size:12px;color:var(--ink-2);line-height:1.55;margin-top:8px}
+  .sheet .fine{font-size:10.5px;color:var(--ink-3);margin-top:8px;line-height:1.45}
+  .sheetbtns{display:flex;gap:10px;margin-top:16px}
+  .btn{flex:1;padding:13px;border-radius:13px;font-size:13px;font-weight:800;text-align:center}
+  .btn-ghost{background:var(--fog);color:var(--ink)}
+  .btn-solid{background:var(--red);color:#fff}
+  .btn:active{transform:scale(.98)}
+
+  /* tabbar */
+  .tabbar{display:flex;justify-content:space-around;align-items:center;background:var(--paper);border-top:1px solid var(--line);padding:8px 6px 16px}
+  .tab{padding:7px 11px;border-radius:10px;font-size:11px;font-weight:800;color:var(--ink-3)}
+  .tab.on{color:var(--red);background:var(--red-tint)}
+
+  /* ── panel ───────────────────────────────── */
+  .panel{width:360px;max-width:100%;padding-top:6px;flex:0 0 auto;color:#fff}
+  .peyebrow{font-size:10px;font-weight:800;letter-spacing:.18em;color:rgba(255,255,255,.4);margin-bottom:10px}
+  .pcard{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px;margin-bottom:12px}
+  .pcard h4{font-size:13px;font-weight:800;margin-bottom:3px}
+  .pcard .phint{font-size:11px;color:rgba(255,255,255,.5);line-height:1.5}
+  .bigamt{font-size:32px;font-weight:800;letter-spacing:-.02em;margin:10px 0 2px}
+  .bigamt small{font-size:13px;font-weight:600;color:rgba(255,255,255,.45);margin-left:5px;letter-spacing:0}
+  .prange{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:99px;background:rgba(255,255,255,.18);margin:12px 0 4px}
+  .prange::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:99px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.4);cursor:pointer}
+  .prange::-moz-range-thumb{width:18px;height:18px;border:none;border-radius:99px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.4);cursor:pointer}
+  .scale{display:flex;justify-content:space-between;font-size:10px;color:rgba(255,255,255,.35)}
+  .presets{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px}
+  .preset{padding:9px 4px;border-radius:10px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.09);font-size:10.5px;font-weight:800;color:rgba(255,255,255,.85);line-height:1.3}
+  .preset:hover{background:rgba(255,255,255,.13)}
+  .preset.on{background:rgba(225,37,27,.9);border-color:transparent;color:#fff}
+  .run{width:100%;padding:15px;border-radius:14px;background:var(--red);color:#fff;font-size:14px;font-weight:800;box-shadow:0 6px 24px rgba(225,37,27,.4);margin-top:14px}
+  .run:hover{background:#F02B20}
+  .run:disabled{background:rgba(255,255,255,.09);box-shadow:none;color:rgba(255,255,255,.45);cursor:not-allowed}
+  .ghost{width:100%;padding:11px;border-radius:12px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.72);font-size:12px;font-weight:800}
+  .ghost:hover{background:rgba(255,255,255,.14)}
+  .whathap{font-size:11.5px;line-height:1.6;color:rgba(255,255,255,.62)}
+  .whathap b{color:rgba(255,255,255,.92)}
+  .try{display:flex;gap:8px;align-items:flex-start;font-size:11.5px;line-height:1.5;color:rgba(255,255,255,.6);padding:6px 0}
+  .try em{font-style:normal;color:var(--red);font-weight:800;flex:0 0 auto}
+  .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px}
+  .stat{background:rgba(255,255,255,.05);border-radius:11px;padding:9px 10px}
+  .stat .k{font-size:9.5px;font-weight:800;letter-spacing:.06em;color:rgba(255,255,255,.4)}
+  .stat .v{font-size:15px;font-weight:800;margin-top:2px}
+
+  /* intro */
+  .intro{position:fixed;inset:0;background:rgba(12,12,15,.82);backdrop-filter:blur(8px);z-index:60;display:flex;align-items:center;justify-content:center;padding:22px}
+  .intro.off{display:none}
+  .introbox{background:var(--paper);border-radius:24px;padding:28px;max-width:430px;width:100%}
+  .introbox .brand{margin-bottom:6px}
+  .introbox h2{font-size:23px;font-weight:800;line-height:1.25;letter-spacing:-.02em}
+  .introbox p{font-size:13.5px;color:var(--ink-2);line-height:1.6;margin-top:12px}
+  .steps{margin:18px 0 4px}
+  .step{display:flex;gap:11px;align-items:flex-start;padding:7px 0}
+  .step .sn{width:22px;height:22px;border-radius:99px;background:var(--red);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .step .st{font-size:12.5px;line-height:1.5;color:var(--ink)}
+  .introbtn{width:100%;padding:14px;border-radius:13px;background:var(--red);color:#fff;font-size:14px;font-weight:800;margin-top:14px}
+
+  @media (max-width:820px){
+    .stage{padding:14px 12px 28px;gap:20px}
+    .phone{width:100%;max-width:400px}
+    .screen{height:700px}
+    .panel{width:100%;max-width:400px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none !important;animation:none !important;scroll-behavior:auto !important}
+    .rung{opacity:1;transform:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- ── first-run explainer ─────────────────── -->
+<div class="intro on" id="intro">
+  <div class="introbox">
+    <div class="brand">OCBC STEADY</div>
+    <h2>You're Farhan, a private-hire driver.</h2>
+    <p>Some weeks you clear S$1,800. Some weeks you clear S$700. Your rent doesn't care. Steady is an AI agent that sits between your gig earnings and your life, and pays you a fixed salary every Friday — inside rules you write.</p>
+    <div class="steps">
+      <div class="step"><div class="sn">1</div><div class="st">Set what you earned this week on the right, then <b>Run the week</b>.</div></div>
+      <div class="step"><div class="sn">2</div><div class="st">Watch the agent allocate it live in the <b>Ladder</b> tab. Nothing is pre-scripted — it recalculates on whatever you give it.</div></div>
+      <div class="step"><div class="sn">3</div><div class="st">Change your rules in the <b>Constitution</b> tab, then run another week and watch the agent obey them.</div></div>
+    </div>
+    <button class="introbtn" id="introGo">Start with a typical week</button>
+  </div>
+</div>
+
+<div class="stage">
+  <!-- ── phone ─────────────────────────────── -->
+  <div class="phone">
+    <div class="screen">
+      <div class="statusbar"><span>9:41</span><div class="notch"></div><span>100%</span></div>
+      <div class="apphead">
+        <div>
+          <div class="brand">OCBC STEADY</div>
+          <div class="greet">Hi Farhan</div>
+        </div>
+        <div class="pill"><i></i><span id="agentState">Agent active</span></div>
+      </div>
+
+      <div class="views" id="views">
+
+        <!-- HOME -->
+        <section class="view on" id="v-home">
+          <div class="salarycard">
+            <div class="lbl">YOUR STEADY SALARY</div>
+            <div class="amt-row"><span class="amt" id="hSalary">S$850</span><small>every Friday</small></div>
+            <div class="streak" id="hStreak">10 straight weeks paid in full — through lean weeks and strong ones.</div>
+          </div>
+
+          <div class="card">
+            <div class="lbl">VOLATILE EARNINGS, STABLE PAY</div>
+            <div class="sub" style="margin-bottom:8px">Grey bars are what the platforms paid you. The green line is what you lived on.</div>
+            <svg id="chart" viewBox="0 0 328 132" style="width:100%;display:block"></svg>
+          </div>
+
+          <div class="card">
+            <div class="metertop">
+              <span class="lbl">BUFFER RESERVE</span>
+              <span id="bufTxt">S$3,120 / S$3,400</span>
+            </div>
+            <div class="meter"><i id="bufBar"></i></div>
+            <div class="sub" style="margin-top:7px" id="bufNote"></div>
+          </div>
+
+          <div class="card goalrow">
+            <div>
+              <div class="lbl">BTO DOWN-PAYMENT FUND</div>
+              <div class="sub" style="margin-top:2px">Where surplus lands once the buffer is full</div>
+            </div>
+            <div class="goalamt" id="goalAmt">S$4,250</div>
+          </div>
+
+          <div class="card goalrow">
+            <div>
+              <div class="lbl">MEDISAVE &amp; TAX SET-ASIDE</div>
+              <div class="sub" style="margin-top:2px">Locked first, every week. Never spendable.</div>
+            </div>
+            <div class="goalamt" style="color:var(--ink)" id="cpfAmt">S$2,180</div>
+          </div>
+
+          <div id="homeNotes"></div>
+        </section>
+
+        <!-- LADDER -->
+        <section class="view" id="v-ladder">
+          <div class="card">
+            <div class="lbl">WEEK <span id="lWeek">10</span> ALLOCATION</div>
+            <div class="sub" id="lIntro" style="margin-bottom:4px">Run a week to see the agent allocate it, rung by rung.</div>
+            <div id="rungs"></div>
+          </div>
+          <div class="card">
+            <div class="lbl" style="margin-bottom:6px">WHY THIS ORDER</div>
+            <div class="sub" style="line-height:1.6">The ladder is fixed and top-down: obligations before comfort, stability before growth. The agent never skips a rung or reorders them — that's what makes its behaviour predictable enough to hand it real money.</div>
+          </div>
+        </section>
+
+        <!-- ACTIVITY -->
+        <section class="view" id="v-log">
+          <div class="card">
+            <div class="lbl" style="margin-bottom:8px">EVERY MOVE, ON THE RECORD</div>
+            <div id="logList"></div>
+          </div>
+        </section>
+
+        <!-- CONSTITUTION -->
+        <section class="view" id="v-rules">
+          <div class="card">
+            <div class="metertop" style="margin-bottom:2px">
+              <span class="lbl">YOUR CONSTITUTION</span>
+              <span style="font-size:9.5px;font-weight:800;background:var(--fog);color:var(--ink-2);padding:3px 8px;border-radius:99px" id="cVer">v2</span>
+            </div>
+            <div class="sub" style="margin-bottom:4px">The rules Steady must follow. Change any of them — the agent obeys the new version from your next week onward.</div>
+
+            <div class="dial">
+              <div class="dialtop"><span class="dialname">Ask me before any move above</span><span class="dialval" id="dLimitV">S$500</span></div>
+              <div class="dialsub">Set it to S$0 and Steady asks before every single sweep. Raise it and it acts more freely.</div>
+              <input type="range" id="dLimit" min="0" max="1500" step="50" value="500" />
+            </div>
+
+            <div class="dial">
+              <div class="dialtop"><span class="dialname">My weekly salary</span><span class="dialval" id="dSalV">S$850</span></div>
+              <div class="dialsub">The fixed amount that lands every Friday. Set it too high and the buffer drains faster than it fills.</div>
+              <input type="range" id="dSal" min="400" max="1600" step="25" value="850" />
+            </div>
+
+            <div class="dial">
+              <div class="dialtop"><span class="dialname">Buffer depth</span><span class="dialval" id="dBufV">4 weeks</span></div>
+              <div class="dialsub">How many weeks of salary Steady holds back before sending surplus to your goals.</div>
+              <input type="range" id="dBuf" min="1" max="8" step="1" value="4" />
+            </div>
+
+            <div class="dial">
+              <div class="dialtop"><span class="dialname">MediSave &amp; tax set-aside</span><span class="dialval" id="dRateV">15%</span></div>
+              <div class="dialsub">Taken off the top of gross earnings before anything else happens.</div>
+              <input type="range" id="dRate" min="0" max="30" step="1" value="15" />
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="ruleh" style="color:var(--green)">STEADY ACTS ON ITS OWN</div>
+            <div id="rulesAuto"></div>
+            <div class="ruleh" style="color:var(--red)">STEADY ASKS YOU FIRST</div>
+            <div id="rulesAsk"></div>
+            <div class="ruleh" style="color:var(--ink-2)">ALWAYS ON — YOU CAN'T LOSE THESE</div>
+            <div id="rulesAlways"></div>
+          </div>
+        </section>
+      </div>
+
+      <div class="toast" id="toast"></div>
+
+      <div class="scrim" id="scrim">
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="brand" id="shEyebrow">STEADY NEEDS YOUR OK</div>
+          <h3 id="shTitle"></h3>
+          <p id="shBody"></p>
+          <div class="fine" id="shFine"></div>
+          <div class="sheetbtns">
+            <button class="btn btn-ghost" id="shNo"></button>
+            <button class="btn btn-solid" id="shYes"></button>
+          </div>
+        </div>
+      </div>
+
+      <nav class="tabbar">
+        <button class="tab on" data-tab="home">Home</button>
+        <button class="tab" data-tab="ladder">Ladder</button>
+        <button class="tab" data-tab="log">Activity</button>
+        <button class="tab" data-tab="rules">Constitution</button>
+      </nav>
+    </div>
+  </div>
+
+  <!-- ── panel ─────────────────────────────── -->
+  <aside class="panel">
+    <div class="peyebrow">THIS WEEK ON THE ROAD</div>
+
+    <div class="pcard">
+      <h4>What did you earn?</h4>
+      <div class="phint">In the real product this arrives from the platforms. Here, you decide — pick anything, including nothing.</div>
+      <div class="bigamt"><span id="eAmt">S$1,435</span><small>gross, this week</small></div>
+      <input type="range" class="prange" id="eRange" min="0" max="4000" step="5" value="1435" />
+      <div class="scale"><span>S$0</span><span>S$2,000</span><span>S$4,000</span></div>
+      <div class="presets">
+        <button class="preset" data-e="0">Zero<br>week</button>
+        <button class="preset" data-e="705">Lean<br>S$705</button>
+        <button class="preset on" data-e="1435">Typical<br>S$1,435</button>
+        <button class="preset" data-e="3150">Surge<br>S$3,150</button>
+      </div>
+      <button class="run" id="runBtn">Run the week</button>
+      <button class="ghost" id="resetBtn" style="margin-top:8px">Start over from week 10</button>
+    </div>
+
+    <div class="pcard">
+      <h4 id="wtTitle">What just happened</h4>
+      <div class="whathap" id="whathap">Farhan is ten weeks in. His earnings have swung between S$980 and S$1,700, and every Friday he was paid S$850. Set an amount and run the week to see how the agent handles it.</div>
+      <div class="stats">
+        <div class="stat"><div class="k">WEEKS PAID</div><div class="v" id="sWeeks">10</div></div>
+        <div class="stat"><div class="k">IN FULL</div><div class="v" id="sFull">100%</div></div>
+        <div class="stat"><div class="k">BUFFER</div><div class="v" id="sBuf">3.7w</div></div>
+      </div>
+    </div>
+
+    <div class="pcard">
+      <h4>Try to break it</h4>
+      <div class="phint" style="margin-bottom:6px">The engine is real — it's not playing back a script. Some things worth doing:</div>
+      <div class="try"><em>→</em><span>Run three zero-weeks in a row and watch the buffer die. Steady tells you before it happens, and never pretends the money is there.</span></div>
+      <div class="try"><em>→</em><span>Set your per-move limit to S$0, then run a surge week. Now it asks permission for everything.</span></div>
+      <div class="try"><em>→</em><span>Push your salary to S$1,500 and run typical weeks. The agent will warn you that you've priced yourself above your own earnings.</span></div>
+    </div>
+  </aside>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ── state ──────────────────────────────────
+  var START = {
+    week:10, buffer:3120, goal:4250, cpf:2180, bills:310, held:0,
+    salary:850, bufWeeks:4, limit:500, rate:15, ver:2,
+    paidWeeks:10, fullWeeks:10,
+    hist:[
+      {e:1380,p:850},{e:1520,p:850},{e:1290,p:850},{e:1610,p:850},{e:1445,p:850},
+      {e:980,p:850},{e:1700,p:850},{e:1355,p:850},{e:1490,p:850},{e:1435,p:850}
+    ],
+    log:[
+      {t:"Last Fri",x:"Weekly salary of S$850 paid to spending account",k:"salary"},
+      {t:"Last Fri",x:"S$215 set aside for MediSave & income tax",k:"auto"},
+      {t:"Last Fri",x:"Bills envelope funded — S$310",k:"auto"},
+      {t:"Last Fri",x:"Buffer topped up +S$60",k:"auto"}
+    ],
+    last:null, pending:null, notes:[]
+  };
+  var S = JSON.parse(JSON.stringify(START));
+  var earnInput = 1435;
+
+  // ── helpers ────────────────────────────────
+  function $(id){ return document.getElementById(id); }
+  function fmt(n){ return "S$" + Math.round(n).toLocaleString("en-SG"); }
+  function target(){ return S.salary * S.bufWeeks; }
+
+  // ── the engine: deterministic five-rung ladder ──
+  // Runs on ANY earnings value. Nothing here is scripted.
+  function runLadder(earnings){
+    var r = { earnings:earnings, notes:[], logs:[], askSweep:0 };
+
+    // Rung 1 — set-aside off gross, first, always.
+    r.setAside = Math.round(earnings * (S.rate/100));
+    var avail = earnings - r.setAside;
+
+    // Rungs 2 & 3 — bills envelope, then the fixed salary.
+    var need = S.bills + S.salary;
+    r.bills = S.bills;
+    r.salaryDue = S.salary;
+
+    if (avail >= need) {
+      r.salaryPaid = S.salary;
+      r.fromBuffer = 0;
+      var surplus = avail - need;
+
+      // Rung 4 — refill the buffer to its target before anything else.
+      r.toBuffer = Math.min(surplus, Math.max(0, target() - S.buffer));
+      surplus -= r.toBuffer;
+
+      // Rung 5 — only now does money reach goals.
+      r.sweep = surplus;
+      r.shortfall = 0;
+    } else {
+      // Not enough came in. Draw on the buffer — and never pretend money exists.
+      r.toBuffer = 0;
+      r.sweep = 0;
+      var pot = avail + S.buffer;
+      r.bills = Math.min(pot, S.bills);   // bills envelope funded only as far as the pot goes
+      pot -= r.bills;
+      r.salaryPaid = Math.min(pot, S.salary);
+      r.fromBuffer = Math.min(S.buffer, Math.max(0, (r.bills + r.salaryPaid) - avail));
+      r.shortfall = S.salary - r.salaryPaid;
+      r.billsShort = S.bills - r.bills;
+    }
+    r.bufferAfter = S.buffer + r.toBuffer - r.fromBuffer;
+    return r;
+  }
+
+  function apply(r){
+    var wk = S.week + 1;
+    S.cpf += r.setAside;
+    S.buffer = r.bufferAfter;
+    S.week = wk;
+    S.paidWeeks++;
+    if (r.shortfall <= 0) S.fullWeeks++;
+    S.hist.push({e:r.earnings, p:r.salaryPaid});
+    if (S.hist.length > 14) S.hist.shift();
+    S.notes = [];
+
+    var L = [];
+    if (r.salaryPaid >= S.salary) {
+      L.push({t:"Fri 9:00am",x:"Weekly salary of "+fmt(S.salary)+" paid to spending account",k:"salary"});
+    } else if (r.salaryPaid > 0) {
+      L.push({t:"Fri 9:00am",x:"Only "+fmt(r.salaryPaid)+" available for salary — buffer is empty",k:"warn"});
+    } else {
+      L.push({t:"Fri 9:00am",x:"No salary could be paid — nothing earned, nothing in the buffer",k:"warn"});
+    }
+    if (r.setAside > 0) L.push({t:"Fri 9:00am",x:fmt(r.setAside)+" set aside for MediSave & income tax",k:"auto"});
+    if (r.billsShort > 0) {
+      L.push({t:"Fri 9:00am",x:"Bills envelope short by "+fmt(r.billsShort)+" — only "+fmt(r.bills)+" was available",k:"warn"});
+    } else {
+      L.push({t:"Fri 9:00am",x:"Bills envelope funded — "+fmt(r.bills),k:"auto"});
+    }
+    if (r.fromBuffer > 0) L.push({t:"Fri 9:00am",x:"Buffer covered a "+fmt(r.fromBuffer)+" shortfall so your salary didn't move",k:"buffer"});
+    if (r.toBuffer > 0) L.push({t:"Fri 9:01am",x:"Buffer topped up +"+fmt(r.toBuffer)+(r.bufferAfter>=target()?" — now full":""),k:"auto"});
+
+    if (r.sweep > 0) {
+      if (r.sweep <= S.limit) {
+        S.goal += r.sweep;
+        L.push({t:"Fri 9:01am",x:fmt(r.sweep)+" surplus swept to BTO fund — within your "+fmt(S.limit)+" limit",k:"sweep"});
+      } else {
+        S.pending = r.sweep;
+        L.push({t:"Fri 9:01am",x:"Proposed: sweep "+fmt(r.sweep)+" to BTO fund — above your "+fmt(S.limit)+" limit, waiting for your OK",k:"ask"});
+      }
+    }
+
+    // Honest warnings — the agent surfaces its own limits.
+    if (S.buffer < S.salary && S.buffer > 0) {
+      S.notes.push({tone:"amber", txt:"Heads up — your buffer is down to "+fmt(S.buffer)+", under one week of salary. Another lean week and Steady won't be able to pay you in full."});
+      L.push({t:"Fri 9:01am",x:"Buffer fell below one week of salary — you were notified",k:"warn"});
+    }
+    if (S.buffer <= 0 && r.shortfall > 0) {
+      S.notes.push({tone:"red", txt:"Your buffer is empty. Steady paid "+fmt(r.salaryPaid)+" instead of "+fmt(S.salary)+" — it will never move money that isn't there, or borrow to cover the gap."});
+    }
+    if (r.earnings > 0 && r.earnings < S.salary * 0.9 && S.buffer > S.salary) {
+      // quiet — no note needed, the buffer is doing its job
+    }
+    var avg = S.hist.reduce(function(a,b){return a+b.e;},0) / S.hist.length;
+    if (S.salary > avg * (1 - S.rate/100) - S.bills) {
+      S.notes.push({tone:"amber", txt:"Your salary of "+fmt(S.salary)+" is running ahead of what you typically earn after set-asides and bills. Steady can hold this from the buffer for a while, not forever."});
+    }
+
+    S.log = L.reverse().concat(S.log);
+    S.last = r;
+  }
+
+  // ── render ─────────────────────────────────
+  function drawChart(){
+    var d = S.hist.slice(-12), W=328, H=118, pad=6;
+    var max = Math.max.apply(null, d.map(function(o){return o.e;}).concat([S.salary, 900])) * 1.1;
+    var bw = (W - pad*2) / d.length;
+    var y = function(v){ return H - (v/max)*(H-16); };
+    var out = "";
+    d.forEach(function(o,i){
+      out += '<rect x="'+(pad+i*bw+2.5).toFixed(1)+'" y="'+y(o.e).toFixed(1)+'" width="'+(bw-5).toFixed(1)+
+             '" height="'+(H-y(o.e)).toFixed(1)+'" rx="3" fill="#E9E9EC"></rect>';
+    });
+    var pts = d.map(function(o,i){ return (pad+i*bw+bw/2).toFixed(1)+","+y(o.p).toFixed(1); }).join(" ");
+    out += '<polyline points="'+pts+'" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></polyline>';
+    var ly = y(S.salary);
+    out += '<text x="'+(W-pad)+'" y="'+(ly-6).toFixed(1)+'" text-anchor="end" font-size="10" font-weight="700" fill="var(--green)">Salary '+fmt(S.salary)+'</text>';
+    out += '<text x="'+pad+'" y="'+(H+12)+'" font-size="9" fill="var(--ink-3)">weekly gig earnings, last '+d.length+' weeks</text>';
+    $("chart").innerHTML = out;
+  }
+
+  function drawHome(){
+    $("hSalary").textContent = fmt(S.salary);
+    var pct = S.fullWeeks === S.paidWeeks;
+    $("hStreak").textContent = pct
+      ? S.paidWeeks + " straight weeks paid in full — through lean weeks and strong ones."
+      : S.fullWeeks + " of " + S.paidWeeks + " weeks paid in full. Steady tells you when it can't.";
+    var t = target();
+    $("bufTxt").textContent = fmt(S.buffer) + " / " + fmt(t);
+    var p = t ? Math.min(100, (S.buffer/t)*100) : 0;
+    var bar = $("bufBar");
+    bar.style.width = p + "%";
+    bar.style.background = p >= 99 ? "var(--green)" : (S.buffer < S.salary ? "var(--red)" : "var(--amber)");
+    $("bufNote").textContent = p >= 99
+      ? "Full — " + S.bufWeeks + " weeks of salary held back. New surplus flows to your goals."
+      : (S.buffer/S.salary).toFixed(1) + " weeks of salary held back. Surplus refills this before it reaches goals.";
+    $("goalAmt").textContent = fmt(S.goal);
+    $("cpfAmt").textContent = fmt(S.cpf);
+
+    var n = "";
+    S.notes.forEach(function(o){ n += '<div class="note '+o.tone+'">'+o.txt+'</div>'; });
+    if (S.held > 0) n += '<div class="note amber">'+fmt(S.held)+' is sitting in your current account after you declined a sweep. Steady won\'t touch it.</div>';
+    $("homeNotes").innerHTML = n;
+  }
+
+  function rung(n,name,desc,val,tone,delay){
+    return '<div class="rung" style="transition-delay:'+delay+'ms">'+
+      '<div class="n '+tone+'">'+n+'</div><div class="body"><div class="name">'+name+'</div>'+
+      '<div class="desc">'+desc+'</div></div><div class="val '+tone+'">'+val+'</div></div>';
+  }
+
+  function drawLadder(){
+    $("lWeek").textContent = S.week;
+    var r = S.last;
+    if (!r) {
+      $("lIntro").textContent = "Run a week to see the agent allocate it, rung by rung.";
+      $("rungs").innerHTML =
+        rung(1,"MediSave &amp; tax set-aside","Taken off gross earnings, first, always","—","t-mute",0)+
+        rung(2,"Bills envelope","Rent share, phone, insurance — pre-funded","—","t-mute",0)+
+        rung(3,"Steady Salary","Your fixed weekly pay, every Friday","—","t-mute",0)+
+        rung(4,"Buffer reserve","Fills on strong weeks, pays out on lean ones","—","t-mute",0)+
+        rung(5,"Sweep to goals","Only flows once the buffer is full","—","t-mute",0);
+      requestAnimationFrame(function(){
+        [].forEach.call(document.querySelectorAll("#rungs .rung"), function(el){ el.classList.add("in"); });
+      });
+      return;
+    }
+    $("lIntro").innerHTML = "Gig earnings in: <b style='color:var(--ink)'>"+fmt(r.earnings)+"</b> · applied top-down, every Friday";
+
+    var r4name = "Buffer reserve", r4desc, r4val, r4tone;
+    if (r.fromBuffer > 0){
+      r4desc = "Lean week — the buffer covered your shortfall";
+      r4val = "−" + fmt(r.fromBuffer); r4tone = "t-amber";
+    } else if (r.toBuffer > 0){
+      r4desc = r.bufferAfter >= target() ? "Refilled to full — " + S.bufWeeks + " weeks held back" : "Strong week — held back for the lean ones";
+      r4val = "+" + fmt(r.toBuffer); r4tone = "t-ink";
+    } else {
+      r4desc = S.buffer >= target() ? "Already full — surplus moves on to goals" : "Nothing left to hold back this week";
+      r4val = S.buffer >= target() ? "full" : "—"; r4tone = "t-mute";
+    }
+
+    var r5desc, r5val, r5tone;
+    if (r.sweep <= 0){ r5desc = "Nothing to sweep — the buffer comes first"; r5val = "—"; r5tone = "t-mute"; }
+    else if (r.sweep > S.limit){ r5desc = "Above your "+fmt(S.limit)+" limit — waiting for your OK"; r5val = fmt(r.sweep); r5tone = "t-red"; }
+    else { r5desc = "Within your "+fmt(S.limit)+" limit — moved on its own"; r5val = fmt(r.sweep); r5tone = "t-green"; }
+
+    var r3desc, r3val, r3tone;
+    if (r.salaryPaid >= S.salary){ r3desc = "Paid in full, on time, as always"; r3val = fmt(r.salaryPaid); r3tone = "t-green"; }
+    else { r3desc = "Buffer empty — this is all there was"; r3val = fmt(r.salaryPaid); r3tone = "t-red"; }
+
+    var r2desc = r.billsShort > 0
+      ? "Short by " + fmt(r.billsShort) + " — this is all there was"
+      : "Rent share, phone, insurance — pre-funded";
+    $("rungs").innerHTML =
+      rung(1,"MediSave &amp; tax set-aside",S.rate+"% off gross — never spendable",fmt(r.setAside),"t-ink",80)+
+      rung(2,"Bills envelope",r2desc,fmt(r.bills),r.billsShort>0?"t-red":"t-ink",240)+
+      rung(3,"Steady Salary",r3desc,r3val,r3tone,400)+
+      rung(4,r4name,r4desc,r4val,r4tone,560)+
+      rung(5,"Sweep to goals",r5desc,r5val,r5tone,720);
+    requestAnimationFrame(function(){
+      [].forEach.call(document.querySelectorAll("#rungs .rung"), function(el){ el.classList.add("in"); });
+    });
+  }
+
+  function drawLog(){
+    var map = {
+      salary:{bg:"var(--green-tint)",fg:"var(--green)",c:"S"},
+      auto:{bg:"var(--fog)",fg:"var(--ink-2)",c:"A"},
+      sweep:{bg:"var(--red-tint)",fg:"var(--red)",c:"→"},
+      buffer:{bg:"var(--amber-tint)",fg:"var(--amber)",c:"B"},
+      ask:{bg:"var(--red-tint)",fg:"var(--red)",c:"?"},
+      warn:{bg:"var(--red-tint)",fg:"var(--red)",c:"!"},
+      you:{bg:"#E9EDF7",fg:"#33518F",c:"✓"}
+    };
+    var out = "";
+    S.log.slice(0,40).forEach(function(l){
+      var m = map[l.k] || map.auto;
+      out += '<div class="logitem"><div class="dot" style="background:'+m.bg+';color:'+m.fg+'">'+m.c+'</div>'+
+             '<div><div class="logtxt">'+l.x+'</div><div class="logmeta">'+l.t+' · reversible for 24h</div></div></div>';
+    });
+    $("logList").innerHTML = out;
+  }
+
+  function drawRules(){
+    $("dLimitV").textContent = fmt(S.limit);
+    $("dSalV").textContent = fmt(S.salary);
+    $("dBufV").textContent = S.bufWeeks + (S.bufWeeks===1?" week":" weeks");
+    $("dRateV").textContent = S.rate + "%";
+    $("cVer").textContent = "v" + S.ver;
+
+    var auto = [
+      "Set aside "+S.rate+"% for MediSave &amp; income tax",
+      "Fund the bills envelope ("+fmt(S.bills)+" a week)",
+      "Pay your "+fmt(S.salary)+" salary every Friday",
+      "Top up lean weeks from the buffer",
+      "Refill the buffer to "+S.bufWeeks+" weeks before touching goals",
+      S.limit > 0 ? "Sweep surpluses of "+fmt(S.limit)+" or less to your goals" : "Nothing — every sweep needs your OK"
+    ];
+    var ask = [
+      S.limit > 0 ? "Any single move above "+fmt(S.limit) : "Every single sweep, at any size",
+      "Adding, changing or removing a goal",
+      "Moving money outside your own accounts"
+    ];
+    var always = [
+      "Reverse any agent move within 24 hours",
+      "Steady tells you the moment your buffer drops under one week",
+      "Steady never borrows, and never moves money that isn't there",
+      "Full action log, exportable any time"
+    ];
+    function lines(arr, mk, col){
+      return arr.map(function(s){
+        return '<div class="ruleline"><span class="mk" style="color:'+col+'">'+mk+'</span><span class="tx">'+s+'</span></div>';
+      }).join("");
+    }
+    $("rulesAuto").innerHTML = lines(auto,"✓","var(--green)");
+    $("rulesAsk").innerHTML = lines(ask,"✋","var(--red)");
+    $("rulesAlways").innerHTML = lines(always,"●","var(--ink-2)");
+  }
+
+  function drawPanel(){
+    $("sWeeks").textContent = S.paidWeeks;
+    $("sFull").textContent = Math.round((S.fullWeeks/S.paidWeeks)*100) + "%";
+    $("sBuf").textContent = (S.buffer/S.salary).toFixed(1) + "w";
+    $("runBtn").disabled = !!S.pending;
+    $("runBtn").textContent = S.pending ? "Answer Steady on the phone first" : "Run the week";
+  }
+
+  function narrate(r){
+    if (!r) return;
+    var s = "";
+    if (r.shortfall > 0){
+      s = "Earnings of <b>"+fmt(r.earnings)+"</b> and an empty buffer. Steady paid <b>"+fmt(r.salaryPaid)+"</b> — all there was — and said so plainly rather than quietly borrowing to cover it. That honesty is the product.";
+    } else if (r.fromBuffer > 0){
+      s = "Earnings dropped to <b>"+fmt(r.earnings)+"</b>, well under the salary. The buffer covered the <b>"+fmt(r.fromBuffer)+"</b> gap and Friday looked identical to every other Friday. <b>This is the whole idea.</b>";
+    } else if (r.sweep > S.limit){
+      s = "A strong week left <b>"+fmt(r.sweep)+"</b> spare after the buffer refilled. That's over your <b>"+fmt(S.limit)+"</b> limit — so the agent stopped and asked. It could move the money. Your rules say it may not.";
+    } else if (r.sweep > 0){
+      s = "Earnings of <b>"+fmt(r.earnings)+"</b> covered everything. The buffer's full, so <b>"+fmt(r.sweep)+"</b> went to the BTO fund on its own — under your <b>"+fmt(S.limit)+"</b> limit, so no interruption. You found out afterwards, in the log.";
+    } else if (r.toBuffer > 0){
+      s = "Earnings of <b>"+fmt(r.earnings)+"</b> covered the salary and put <b>"+fmt(r.toBuffer)+"</b> back into the buffer. Nothing reaches your goals until that's full — stability before growth.";
+    } else {
+      s = "Earnings of <b>"+fmt(r.earnings)+"</b> covered the salary and the bills exactly. No surplus, no draw, no interruption.";
+    }
+    $("wtTitle").textContent = "Week " + S.week + " — what just happened";
+    $("whathap").innerHTML = s;
+  }
+
+  var toastT;
+  function toast(msg){
+    var el = $("toast");
+    el.textContent = msg; el.classList.add("on");
+    clearTimeout(toastT);
+    toastT = setTimeout(function(){ el.classList.remove("on"); }, 4600);
+  }
+
+  function askSweep(amt){
+    $("shEyebrow").textContent = "STEADY NEEDS YOUR OK";
+    $("shTitle").textContent = "Move " + fmt(amt) + " to your BTO fund?";
+    $("shBody").innerHTML = "Your buffer is full, so this surplus can go to your goals. But it's above your <b style='color:var(--ink)'>"+fmt(S.limit)+" per-move limit</b> — so under your Constitution, Steady won't move it without you.";
+    $("shFine").textContent = "No answer in 48 hours? Nothing moves. It stays in your current account.";
+    $("shNo").textContent = "Keep in account";
+    $("shYes").textContent = "Approve move";
+    $("scrim").classList.add("on");
+  }
+
+  function draw(){ drawChart(); drawHome(); drawLadder(); drawLog(); drawRules(); drawPanel(); }
+
+  // ── actions ────────────────────────────────
+  function runWeek(){
+    if (S.pending) return;
+    var r = runLadder(earnInput);
+    apply(r);
+    narrate(r);
+    draw();
+    show("ladder");
+    if (S.pending) {
+      setTimeout(function(){ askSweep(S.pending); }, 950);
+    } else {
+      if (r.shortfall > 0) toast("Buffer empty. Steady paid " + fmt(r.salaryPaid) + " — all there was.");
+      else if (r.fromBuffer > 0) toast("Lean week. Buffer covered " + fmt(r.fromBuffer) + " — your salary stayed " + fmt(S.salary) + ".");
+      else if (r.sweep > 0) toast("Salary paid. " + fmt(r.sweep) + " swept to your BTO fund.");
+      else toast("Salary paid in full. Buffer topped up.");
+    }
+  }
+
+  function resolve(ok){
+    var amt = S.pending;
+    S.pending = null;
+    if (ok){
+      S.goal += amt;
+      S.log.unshift({t:"Just now",x:"You approved — "+fmt(amt)+" moved to your BTO fund",k:"you"});
+      toast("Approved. " + fmt(amt) + " moved to your BTO fund.");
+    } else {
+      S.held += amt;
+      S.log.unshift({t:"Just now",x:"You declined — "+fmt(amt)+" stays in your current account",k:"you"});
+      toast("No move made. " + fmt(amt) + " stays in your current account.");
+    }
+    $("scrim").classList.remove("on");
+    draw();
+  }
+
+  function show(t){
+    [].forEach.call(document.querySelectorAll(".tab"), function(b){ b.classList.toggle("on", b.dataset.tab===t); });
+    [].forEach.call(document.querySelectorAll(".view"), function(v){ v.classList.toggle("on", v.id==="v-"+t); });
+    $("views").scrollTop = 0;
+  }
+
+  function setEarn(v, fromPreset){
+    earnInput = v;
+    $("eAmt").textContent = fmt(v);
+    if (fromPreset !== true) $("eRange").value = v;
+    [].forEach.call(document.querySelectorAll(".preset"), function(b){
+      b.classList.toggle("on", Number(b.dataset.e) === v);
+    });
+  }
+
+  // ── wiring ─────────────────────────────────
+  $("introGo").addEventListener("click", function(){ $("intro").classList.remove("on"); $("intro").classList.add("off"); });
+
+  [].forEach.call(document.querySelectorAll(".tab"), function(b){
+    b.addEventListener("click", function(){ show(b.dataset.tab); });
+  });
+  [].forEach.call(document.querySelectorAll(".preset"), function(b){
+    b.addEventListener("click", function(){ setEarn(Number(b.dataset.e)); });
+  });
+  $("eRange").addEventListener("input", function(e){ setEarn(Number(e.target.value), true); });
+  $("runBtn").addEventListener("click", runWeek);
+  $("shYes").addEventListener("click", function(){ resolve(true); });
+  $("shNo").addEventListener("click", function(){ resolve(false); });
+  $("resetBtn").addEventListener("click", function(){
+    S = JSON.parse(JSON.stringify(START));
+    $("scrim").classList.remove("on");
+    $("wtTitle").textContent = "What just happened";
+    $("whathap").innerHTML = "Farhan is ten weeks in. His earnings have swung between S$980 and S$1,700, and every Friday he was paid S$850. Set an amount and run the week to see how the agent handles it.";
+    setEarn(1435);
+    draw(); show("home");
+    toast("Back to week 10.");
+  });
+
+  function bumpVer(){ S.ver++; }
+  $("dLimit").addEventListener("input", function(e){
+    S.limit = Number(e.target.value); $("dLimitV").textContent = fmt(S.limit);
+  });
+  $("dSal").addEventListener("input", function(e){
+    S.salary = Number(e.target.value); $("dSalV").textContent = fmt(S.salary);
+  });
+  $("dBuf").addEventListener("input", function(e){
+    S.bufWeeks = Number(e.target.value);
+    $("dBufV").textContent = S.bufWeeks + (S.bufWeeks===1?" week":" weeks");
+  });
+  $("dRate").addEventListener("input", function(e){
+    S.rate = Number(e.target.value); $("dRateV").textContent = S.rate + "%";
+  });
+  ["dLimit","dSal","dBuf","dRate"].forEach(function(id){
+    $(id).addEventListener("change", function(){
+      bumpVer();
+      S.log.unshift({t:"Just now",x:"You updated your Constitution — Steady follows v"+S.ver+" from your next week",k:"you"});
+      draw();
+      toast("Constitution updated. Steady follows v" + S.ver + " from your next week.");
+    });
+  });
+
+  draw();
+})();
+</script>
+</body>
+</html>
